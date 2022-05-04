@@ -8,8 +8,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
+using CashMachineWebApp.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace CashMachineWebApp
 {
@@ -30,13 +34,16 @@ namespace CashMachineWebApp
         // 3. От клиента получает страницу и отправляет обратно пользователю.
         // 4. На странице когда нажали на кнопку выполняется запрос на указанный url, например GET: "api/users", 
         // обращение снова происходит на localhost, 80й порт, проваливаемся опять в контейнер к веб-серверу.
-        // 5. Веб-сервер видит что url начинается с api и перенапраляет на контейнер backend с портом 80,
+        // 5. Веб-сервер видит что url начинается с api и перенаправляет на контейнер backend с портом 80,
         // получает от него данные и так же отдавет пользователю
         // 6. Клиент получив данные от сервера, перерисовывает страницу
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddMvc();
+            services.AddDbContext<CRUDContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("CashMachine_Db")));
             services.AddCors(options => options.AddPolicy("CorsPolicy",
                 builder =>
                 {
@@ -48,6 +55,11 @@ namespace CashMachineWebApp
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CashMachineWebApp", Version = "v1" });
+
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+
+                c.IncludeXmlComments(string.Format(@"{0}\CashMachineWebApp.XML", System.AppDomain.CurrentDomain.BaseDirectory));
             });
         }
 
