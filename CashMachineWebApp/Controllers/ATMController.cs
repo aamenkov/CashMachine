@@ -18,11 +18,11 @@ namespace CashMachineWebApp.Controllers
     [ApiController]
     public class ATMController : ControllerBase
     {
-        private readonly CRUDContext _CRUDContext;
+        private readonly CashMachineContext _сashMachineContext;
 
-        public ATMController(CRUDContext crudContext)
+        public ATMController(CashMachineContext сashMachineContext)
         {
-            _CRUDContext = crudContext;
+            _сashMachineContext = сashMachineContext;
         }
 
         /// <summary>
@@ -30,13 +30,18 @@ namespace CashMachineWebApp.Controllers
         /// </summary>
         /// <param name="id">ID of ATM</param>
         /// <returns>Cassette list</returns>
-        /// <response code="200">Returns the Cassettes list.</response>
-        /// <response code="204">ATM not found.</response>
+        /// <response code="200">OK.Returns the Cassettes list.</response>
+        /// <response code="400">Bad Request. ATM not found.</response>
         // GET: api/ATM/<id>/Cassettes
         [HttpGet("{id}/Cassettes")]
         public List<Cassette> GetCassettes(Guid id)
         {
-            var list = _CRUDContext.Cassettes.Where(cassette => cassette.AtmId == id).ToList().OrderBy(x => x.Value).ToList();
+            var list = _сashMachineContext
+                .Cassettes
+                .Where(
+                    cassette => cassette.AtmId == id).ToList()
+                .OrderBy(x => x.Value).ToList();
+
             list.Reverse();
             return list;
         }
@@ -50,9 +55,21 @@ namespace CashMachineWebApp.Controllers
         /// <response code="204">Cassette not found</response>
         // GET api/ATM/<id>
         [HttpGet("{id}")]
-        public ATM Get(Guid id)
+        public ATM Get(Guid? id)
         {
-            return _CRUDContext.ATMs.SingleOrDefault(x => x.AtmId == id);
+            //async Task<ActionResult>
+
+            //if (id == null)
+            //{
+            //    return BadRequest("Ошибка");
+            //}
+
+            //var atm = await _сashMachineContext.ATMs.SingleOrDefaultAsync(x => x.AtmId == id);
+
+            //if (atm == null) return NotFound("Ошибка ввода");
+            //return Ok(atm);
+
+            return _сashMachineContext.ATMs.SingleOrDefault(x => x.AtmId == id);
         }
 
         /// <summary>
@@ -62,7 +79,7 @@ namespace CashMachineWebApp.Controllers
         /// <param name="value">value of money to take</param>
         // POST: api/ATM/<id>/GetMoney/<value>
         [HttpPost("{id}/GetMoney/{value}")]
-        public void TakeMoneyFromATM(Guid id, int value)
+        public async Task<IActionResult> TakeMoneyFromATM(Guid id, int value)
         {
             var list = GetCassettes(id);
             var sum = 0;
@@ -71,8 +88,8 @@ namespace CashMachineWebApp.Controllers
             {
                 while ((cassette.IsWorking.Equals(true) && (cassette.Amount > 0) && (sum + cassette.Value <= value)))
                 {
-                    cassette.Amount = cassette.Amount - 1;
-                    sum = sum + cassette.Value;
+                    cassette.Amount -= 1;
+                    sum += cassette.Value;
                 }
             }
             
@@ -80,8 +97,11 @@ namespace CashMachineWebApp.Controllers
             {
                 var atm = Get(id);
                 atm.CassetteList = list;
-                Put(atm);
+                var otvet = await Put(atm);
+                return Ok(atm);
             }
+
+            return BadRequest("Ошибка снятия денег");
         }
 
         /// <summary>
@@ -136,15 +156,20 @@ namespace CashMachineWebApp.Controllers
         /// Creates an new ATM.
         /// </summary>
         /// <param name="atm">new ATM</param>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
         // POST api/ATM
         [HttpPost]
-        public void Post([FromBody] ATM atm)
+        public async Task<IActionResult> Post([FromBody] ATM atm)
         {
             if (Validation.Validation.CheckCassetteList(atm.CassetteList))
             {
-                _CRUDContext.ATMs.Add(atm);
-                _CRUDContext.SaveChanges();
+                await _сashMachineContext.ATMs.AddAsync(atm);
+                await _сashMachineContext.SaveChangesAsync();
+                return Ok(atm);
             }
+
+            return BadRequest("Банкомат не создан");
         }
 
         /// <summary>
@@ -153,13 +178,15 @@ namespace CashMachineWebApp.Controllers
         /// <param name="atm">Changable ATM.</param>
         // PUT api/ATM/<id>
         [HttpPut("{id}")]
-        public void Put([FromBody] ATM atm)
+        public async Task<IActionResult> Put([FromBody] ATM atm)
         {
             if (Validation.Validation.CheckCassetteList(atm.CassetteList))
             {
-                _CRUDContext.ATMs.Update(atm);
-                _CRUDContext.SaveChanges();
+                _сashMachineContext.ATMs.Update(atm);
+                await _сashMachineContext.SaveChangesAsync();
+                return Ok(atm);
             }
+            return BadRequest("Банкомат не обновлен");
         }
 
         /// <summary>
@@ -168,14 +195,16 @@ namespace CashMachineWebApp.Controllers
         /// <param name="id">id of ATM</param>
         // DELETE api/ATM/<id>
         [HttpDelete("{id}")]
-        public void Delete(Guid id)
+        public async Task<IActionResult> Delete(Guid id)
         {
-            var item = _CRUDContext.ATMs.SingleOrDefault(x => x.AtmId == id);
+            var item = _сashMachineContext.ATMs.SingleOrDefault(x => x.AtmId == id);
             if (item != null)
             {
-                _CRUDContext.ATMs.Remove(item);
-                _CRUDContext.SaveChanges();
+                _сashMachineContext.ATMs.Remove(item);
+                await _сashMachineContext.SaveChangesAsync();
+                return Ok("Удаление прошло успешно");
             }
+            return BadRequest("Удаление не произошло");
         }
     }
 }

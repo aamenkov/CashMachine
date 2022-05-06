@@ -1,9 +1,11 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
 using CashMachineWebApp.Context;
 using CashMachineWebApp.Models;
 using CashMachineWebApp.Validation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CashMachineWebApp.Controllers
 {
@@ -11,11 +13,11 @@ namespace CashMachineWebApp.Controllers
     [ApiController]
     public class CassetteController : ControllerBase
     {
-        private readonly CRUDContext _CRUDContext;
+        private readonly CashMachineContext _сashMachineContext;
 
-        public CassetteController(CRUDContext crudContext)
+        public CassetteController(CashMachineContext сashMachineContext)
         {
-            _CRUDContext = crudContext;
+            _сashMachineContext = сashMachineContext;
         }
 
         /// <summary>
@@ -27,25 +29,36 @@ namespace CashMachineWebApp.Controllers
         /// <response code="204">Cassette not found</response>
         // GET: api/Cassette/<id>
         [HttpGet("{id}")]
-        public Cassette Get(int id)
+        public async Task<IActionResult> Get(int ?id)
         {
-            return _CRUDContext.Cassettes.SingleOrDefault(x=>x.CassetteId == id);
+            if (id == null)
+            {
+                return BadRequest("Ошибка");
+            }
+
+            var cassette = await _сashMachineContext.Cassettes.SingleOrDefaultAsync(x => x.CassetteId == id);
+
+            if (cassette == null) return BadRequest("Ошибка ввода");
+            return Ok(cassette);
         }
 
         /// <summary>
         /// Creates a new Cassette.
         /// </summary>
         /// <param name="cassette"></param>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
         // POST: api/Cassette
         [HttpPost]
-        public void Post([FromBody] Cassette cassette)
+        public async Task<IActionResult> Post([FromBody] Cassette cassette)
         {
             if (Validation.Validation.CheckCassette(cassette))
             {
-                _CRUDContext.Cassettes.Add(cassette);
-                _CRUDContext.SaveChanges();
+                await _сashMachineContext.Cassettes.AddAsync(cassette);
+                await _сashMachineContext.SaveChangesAsync();
+                return Ok(cassette);
             }
-
+            return BadRequest("Кассета не создана");
         }
 
         /// <summary>
@@ -54,12 +67,14 @@ namespace CashMachineWebApp.Controllers
         /// <param name="cassette">Changable Cassette.</param>
         // PUT: api/Cassette/<id>
         [HttpPut("{id}")]
-        public void Put([FromBody] Cassette cassette)
+        public async Task<IActionResult> Put([FromBody] Cassette cassette)
         {
             if (Validation.Validation.CheckCassette(cassette)){
-                _CRUDContext.Cassettes.Update(cassette);
-                _CRUDContext.SaveChanges();
+                _сashMachineContext.Cassettes.Update(cassette);
+                await _сashMachineContext.SaveChangesAsync();
+                return Ok(cassette);
             }
+            return BadRequest("Кассета не обновлена");
         }
 
         /// <summary>
@@ -68,15 +83,16 @@ namespace CashMachineWebApp.Controllers
         /// <param name="id">id of Cassette</param>
         // DELETE: api/Cassette/<id>
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var item = _CRUDContext.Cassettes.SingleOrDefault(x => x.CassetteId == id);
+            var item = _сashMachineContext.Cassettes.SingleOrDefault(x => x.CassetteId == id);
             if (item != null)
             {
-                _CRUDContext.Cassettes.Remove(item);
-                _CRUDContext.SaveChanges();
+                _сashMachineContext.Cassettes.Remove(item);
+                await _сashMachineContext.SaveChangesAsync();
+                return Ok("Удаление прошло успешно");
             }
+            return BadRequest("Удаление не произошло");
         }
-
     }
 }
