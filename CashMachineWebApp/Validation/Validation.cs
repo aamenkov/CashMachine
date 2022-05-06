@@ -7,10 +7,10 @@ namespace CashMachineWebApp.Validation
 {
     public static class Validation
     {
-        private static readonly int[] _expectedInput = {10, 50, 100, 200, 500, 1000, 5000}; 
+        private static readonly int[] _expectedInput = {10, 50, 100, 200, 500, 1000, 2000, 5000}; 
         public static bool CheckCassette(Cassette cassette)
         {
-            if ((cassette.Amount > 0) && (Array.IndexOf(_expectedInput, cassette.Value) > 0 ))
+            if ((cassette.Amount > 0) && (Array.IndexOf(_expectedInput, cassette.Value) >= 0 ))
             {
                 return true;
             }

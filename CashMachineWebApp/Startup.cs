@@ -26,23 +26,11 @@ namespace CashMachineWebApp
 
         public IConfiguration Configuration { get; }
 
-        // После запуска docker compose создается частная сеть для контейнеров.
-        // Контейнеры в ней могут обращаться по имени сервиса и порту. Для каждого был выделен внешний порт(5000 и 5001).
-        // 1. Пользователь обращается к домашней странице, в нашем случае это localhost и 80й порт по умолчанию.
-        // 2. 80й порт прослушивает контейнер, проваливаемся в него и попадаем на веб-сервер.
-        // Он видит обращение, которое происходит на стартовый url и перенаправляет на контейнер client:3000.(реакт всегда на 3000м)
-        // 3. От клиента получает страницу и отправляет обратно пользователю.
-        // 4. На странице когда нажали на кнопку выполняется запрос на указанный url, например GET: "api/users", 
-        // обращение снова происходит на localhost, 80й порт, проваливаемся опять в контейнер к веб-серверу.
-        // 5. Веб-сервер видит что url начинается с api и перенаправляет на контейнер backend с портом 80,
-        // получает от него данные и так же отдавет пользователю
-        // 6. Клиент получив данные от сервера, перерисовывает страницу
-
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.AddDbContext<CRUDContext>(options =>
+            services.AddDbContext<CashMachineContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("CashMachine_Db")));
             services.AddCors(options => options.AddPolicy("CorsPolicy",
                 builder =>
@@ -59,7 +47,7 @@ namespace CashMachineWebApp
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
 
-                c.IncludeXmlComments(string.Format(@"{0}\CashMachineWebApp.XML", System.AppDomain.CurrentDomain.BaseDirectory));
+                c.IncludeXmlComments($@"{System.AppDomain.CurrentDomain.BaseDirectory}\CashMachineWebApp.XML");
             });
         }
 

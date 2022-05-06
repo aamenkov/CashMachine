@@ -3,13 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CashMachineWebApp.Context
 {
-    public class CRUDContext : DbContext
+    public class CashMachineContext : DbContext
     {
-        public CRUDContext(DbContextOptions<CRUDContext> options) : base(options)
-        {
-
-        }
-
+        public CashMachineContext(DbContextOptions<CashMachineContext> options) : base(options) { }
         public DbSet<Cassette> Cassettes { get; set; }
         public DbSet<ATM> ATMs { get; set; }
     }
