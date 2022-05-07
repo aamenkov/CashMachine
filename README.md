@@ -1,7 +1,7 @@
 ## Репозиторий для тестового задания :hatching_chick:
 
-На данный момент реализована backend-часть проекта. (web-interface api + nginx + docker + entityframework)
-
+На данный момент полностью реализована backend-часть проекта. (web-interface api + nginx + docker + entityframework)
+Клиент с использованием react-а находится в доработке.
 * * *
 ### Условие. Задание C#:
 
@@ -27,7 +27,7 @@
 ```  
 * Запустить DockerCompose
 * Запустить CashMachineWebApp
-* Открыть localost
+* Открыть localhost
 
 * * *
 ### Идея частной сети с использованием Docker. (На данный момент, в клиенте проставлена прямая ссылка на API)
