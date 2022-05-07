@@ -34,7 +34,7 @@ namespace CashMachineWebApp.Controllers
         /// <response code="400">Bad Request. ATM not found.</response>
         // GET: api/ATM/<id>/Cassettes
         [HttpGet("{id}/Cassettes")]
-        public List<Cassette> GetCassettes(Guid id)
+        public async Task<ActionResult> GetCassettes(Guid id)
         {
             var list = _сashMachineContext
                 .Cassettes
@@ -43,7 +43,9 @@ namespace CashMachineWebApp.Controllers
                 .OrderBy(x => x.Value).ToList();
 
             list.Reverse();
-            return list;
+
+            if (list.Count == 0) return BadRequest("Ошибка. Кассет для данного банкомата не существует.");
+            return Ok(list);
         }
 
         /// <summary>
@@ -55,21 +57,19 @@ namespace CashMachineWebApp.Controllers
         /// <response code="204">Cassette not found</response>
         // GET api/ATM/<id>
         [HttpGet("{id}")]
-        public ATM Get(Guid? id)
+        public async Task<ActionResult> Get(Guid? id)
         {
-            //async Task<ActionResult>
+            if (id == null)
+            {
+                return BadRequest("Ошибка ввода.");
+            }
 
-            //if (id == null)
-            //{
-            //    return BadRequest("Ошибка");
-            //}
+            var atm = await _сashMachineContext.ATMs.SingleOrDefaultAsync(x => x.AtmId == id);
 
-            //var atm = await _сashMachineContext.ATMs.SingleOrDefaultAsync(x => x.AtmId == id);
+            if (atm == null) return BadRequest("Ошибка ввода. Не найден банкомат.");
+            return Ok(atm);
 
-            //if (atm == null) return NotFound("Ошибка ввода");
-            //return Ok(atm);
-
-            return _сashMachineContext.ATMs.SingleOrDefault(x => x.AtmId == id);
+            // return _сashMachineContext.ATMs.SingleOrDefault(x => x.AtmId == id);
         }
 
         /// <summary>
@@ -81,7 +81,13 @@ namespace CashMachineWebApp.Controllers
         [HttpPost("{id}/GetMoney/{value}")]
         public async Task<IActionResult> TakeMoneyFromATM(Guid id, int value)
         {
-            var list = GetCassettes(id);
+            var list = _сashMachineContext
+                .Cassettes
+                .Where(
+                    cassette => cassette.AtmId == id).ToList()
+                .OrderBy(x => x.Value).ToList();
+
+            list.Reverse();
             var sum = 0;
             
             foreach (var cassette in list)
@@ -95,12 +101,19 @@ namespace CashMachineWebApp.Controllers
             
             if (sum == value)
             {
-                var atm = Get(id);
-                atm.CassetteList = list;
-                var otvet = await Put(atm);
-                return Ok(atm);
-            }
+                var atm = await _сashMachineContext.ATMs.SingleOrDefaultAsync(x => x.AtmId == id);
+                if (atm == null) return BadRequest("Ошибка ввода. Не найден банкомат.");
 
+                atm.CassetteList = list;
+
+                if (Validation.Validation.CheckCassetteList(atm.CassetteList))
+                {
+                    _сashMachineContext.ATMs.Update(atm);
+                    await _сashMachineContext.SaveChangesAsync();
+                    return Ok(atm);
+                }
+                return BadRequest("Банкомат не обновлен");
+            }
             return BadRequest("Ошибка снятия денег");
         }
 
@@ -117,7 +130,13 @@ namespace CashMachineWebApp.Controllers
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
-            var list = GetCassettes(id);
+            var list = _сashMachineContext
+                .Cassettes
+                .Where(
+                    cassette => cassette.AtmId == id).ToList()
+                .OrderBy(x => x.Value).ToList();
+
+            list.Reverse();
             var sum = 0;
             var dictionary = new ConcurrentDictionary<int, int>();
 
